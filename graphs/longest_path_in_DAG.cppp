@@ -1,0 +1,220 @@
+typedef vector<int> vi;
+typedef vector<long> vl;
+typedef pair<int, int> npair;
+typedef vector<npair> vp;
+typedef unordered_map<int,vp> myGraph; 
+typedef pair<int, vp> myGraph_pair;
+typedef queue<int> myQueue;
+typedef stack<int> myStack;
+
+#define pb push_back
+
+// building the graph and indegree_array together 
+void build_graph(vi & dag_from,vi & dag_to, vi&  dag_weight,myGraph & g1, vi & indegree_array)
+{
+    for(int i=0; i < dag_from.size(); i++){
+        auto itr = g1.find(dag_from[i]);
+        assert(itr != g1.end());
+        (itr->second).pb(npair(dag_to[i],dag_weight[i]));
+        indegree_array[dag_to[i]]++;
+    }
+    
+}
+
+vi bfs_indegree_top_sort(myGraph & g1, vi & indegree_array, int from_node){
+    vi top_sort;
+    myQueue q1;
+    
+    // if indegree of start_node != 0 => we will not get the right shortest/longest distance to dest-node
+    if(indegree_array[from_node] != 0)
+        return top_sort;
+        
+    q1.push(from_node);
+    
+    while(!q1.empty()) {
+        int elem = q1.front();
+        q1.pop();
+        top_sort.pb(elem);
+        
+        auto itr = g1.find(elem);
+        // look for neighbors of current elem:pair(node, wt)
+        for(auto elem: itr->second){
+            // decrement indegree
+            --indegree_array[elem.first];
+            
+            if(indegree_array[elem.first] == 0)
+                q1.push(elem.first);
+        }
+    }
+    
+    
+   /* cout<<"\n prining the top_sort: ";
+    for(auto e:top_sort ){
+        cout<<"\t"<<e;
+    }*/
+}
+
+
+vi longest_path(myGraph & g1, int from_node, int to_node, int dag_nodes, vi &top_sort){
+    // both start at index:1
+    // in otherwords index:0 is NOT used
+    vl wt (dag_nodes+1, -1);
+    vl edge_from(dag_nodes+1, -1);
+     vi res;
+
+    
+    /*cout<<"\n weights are: \n";
+    for(auto wt1: wt){
+        cout<<"\t "<<wt1;
+    }
+    
+    cout<<"\n edges are: \n";
+    for(auto et: edge_from){
+        cout<<"\t "<<et;
+    }*/
+    
+    // weight to get from from_node to from_node = 0
+    // edge that gets you there is also the same (from_node)
+    wt[from_node] = 0;
+    edge_from[from_node] = from_node;
+    
+    for(auto elem: top_sort){
+        //cout<<"\n elem: "<<elem;
+        auto itr = g1.find(elem);
+        assert( itr != g1.end());
+        for( auto npair : itr->second){
+            // first time we are getting an edge connected
+            // so update both wt and edge_to
+            if(wt[npair.first] == -1){
+                //cout<<"\n IF clock";
+                wt[npair.first] = npair.second + wt[elem];
+                assert(edge_from[npair.first] == -1);
+                edge_from[npair.first] = elem; // you reached npair.first from elem 
+                
+            } else {
+                //cout<<"\n ELSE clock";
+                long curr_wt = wt[elem];
+                long edge_wt = npair.second;
+                //cout<<"\ttotal:"<<curr_wt+edge_wt;
+                if((curr_wt + edge_wt) >= wt[npair.first] ) {
+                    //cout<<"\n NTRIGG";
+                    wt[npair.first] =curr_wt +edge_wt;
+                    edge_from[npair.first] = elem;
+                }
+                
+            }
+            
+        }
+        
+        
+        /*cout<<"\n weights are: \n";
+    for(auto wt1: wt){
+        cout<<"\t "<<wt1;
+    }
+    
+    cout<<"\n edges are: \n";
+    for(auto et: edge_from){
+        cout<<"\t "<<et;
+    }*/
+    }
+    
+    /*cout<<"\nfinal  weights are: \n";
+    for(auto wt1: wt){
+        cout<<"\t "<<wt1;
+    }
+    
+    cout<<"\n final edges are: \n";
+    for(auto et: edge_from){
+        cout<<"\t "<<et;
+    }*/
+    
+    
+     myStack s1;
+    // use the edge_from and return the longest path nodes
+    for(int i = to_node; i != from_node;  ){
+        s1.push(i);
+        int temp = edge_from[i];
+        i = temp;
+    }
+    s1.push(from_node);
+    while(!s1.empty()){
+        res.pb(s1.top());
+        s1.pop();
+        
+    }
+    
+    /*cout<<"\n longest path is: ";
+    for(auto r: res){
+        cout<<"\t"<<r; 
+    }*/
+    return res;
+}
+
+/*
+ * Complete the function below.
+ */
+/*
+	For the weighted graph:
+	1. The number of nodes is <name>_nodes.
+	2. The number of edges is <name>_edges.
+	3. An edge exists between <name>_from[i] to <name>_to[i] and the weight of the edge is <name>_weight[i].
+*/
+vector <int> find_longest_path(int dag_nodes, vector <int> dag_from, vector <int> dag_to, vector <int> dag_weight, int from_node, int to_node) 
+{
+    //vi res;
+    myGraph g1;
+    // indegree_array[0] is NOT used
+    vi indegree_array(dag_nodes+1, 0);
+    
+    // make sure that you consider all the nodes 
+    // you have added empty adjacency list for all nodes 
+    for(int i =1; i <= dag_nodes; i++ ){
+        vp vp1;
+        g1.insert(myGraph_pair(i, vp1));
+        
+    }
+    
+    
+    /*cout<<"\n printing the graph before";
+    for( auto elem: g1){
+        cout<<"\n edges of: "<<elem.first<<" are:";
+        for(auto e: elem.second){
+            cout<<"\t edge: "<<e.first<<"\t weihgt: "<<e.second;
+        }
+        
+    }*/
+    
+   /* cout<<"\n indegree_arry before...\n";
+    for(auto e : indegree_array) {
+        
+        cout<<"\t "<<e;
+    }*/
+    
+    build_graph(dag_from, dag_to, dag_weight, g1, indegree_array);
+    
+    
+   vi top_sort =  bfs_indegree_top_sort(g1, indegree_array, from_node);
+   
+   return longest_path(g1, from_node, to_node, dag_nodes, top_sort);
+    
+    /*cout<<"\n indegree_arry AFTER...\n";
+
+    for(auto e : indegree_array) {
+        
+        cout<<"\t "<<e;
+    }*/
+    
+    /*cout<<"\n printing the graph built";
+    for( auto elem: g1){
+        cout<<"\n edges of: "<<elem.first<<" are:";
+        for(auto e: elem.second){
+            cout<<"\t edge: "<<e.first<<"\t weihgt: "<<e.second;
+        }
+        
+    }*/
+    
+   
+    
+}
+
+
